@@ -236,93 +236,53 @@ end
 
 %==========================================================================
 % End of the entire function
+
 end
-
-
-% % Load data from the .mat file
-% loaded_data = load('/Users/mohitsarin/Desktop/griddata_result.mat');
-% 
-% % Extract the variable containing your data (assuming it's stored as 'data' in the file)
-% data = loaded_data.z;
-% 
-% % Convert to matrix format
-% [X, Y] = meshgrid(linspace(min(X), max(X), (max(X)- min(X))/0.011811000000000), linspace(min(Y), max(Y), (max(Y) -min(Y))/0.019444000000000));
-% Z = griddata(X, Y, , x, y);
-
-% % % Call the function to find peaks
-%  [pks, locs_y, locs_x] = peaks2(data);
-
-% Now pks contains the peak values, locs_y contains the row indices of peaks,
-% and locs_x contains the column indices of peaks.
-% 
-
-% %% Find peak direct function
-%  % Display the results in a table format
-% fprintf('Peak Values\tRow Indices\tColumn Indices\n');
-% fprintf('--------------------------------------------\n');
-% for i = 1:length(pks)
-%     fprintf('%f\t%d\t\t%d\n', pks(i), locs_y(i), locs_x(i));
-% end
-
-
-
-%% tune the function
 % Load CSV file
-data = csvread('/Users/mohitsarin/Desktop/a240402b.csv'); % Adjust the file name as needed
+data_csv = csvread('/Users/mohitsarin/Desktop/TTI/a240402b.csv'); % Adjust the file name as needed
 
 % Extract X, Y, and Z columns
-X = data(:, 1);
-Y = data(:, 2);
-Z = data(:, 3);
+X = data_csv(:, 1);
+Y = data_csv(:, 2);
+Z = data_csv(:, 3);
+
+% Scale X and Y (if needed)
+X_scaled = X;
+Y_scaled = Y;
 
 % Convert to matrix format
-[x, y] = meshgrid(linspace(min(X), max(X), (max(X)- min(X))/0.011811000000000), linspace(min(Y), max(Y), (max(Y) -min(Y))/0.019444000000000));
+[x, y] = meshgrid(linspace(0, 4, 338), linspace(0, 2, 104));
 z = griddata(X, Y, Z, x, y);
 
 % Find peaks in the data
-[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.005, 'MinPeakDistance',0.020);
+% [pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.001, 'MinPeakDistance',0.005);
+[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.0010, 'MinPeakDistance',0.005);
 
-% Convert peak intensities to RGB color values
-colors = pks / max(pks); % Scale intensities between 0 and 1
-colors = [colors, zeros(size(colors)), 1 - colors]; % Create RGB colors
+% Plot the peak values in an X-Y grid using the scaled X values
+scatter(0.0118*locs_x, 0.0194*locs_y, 80, pks, 'filled');
+hold on; % Keep the current plot and add to it
 
-% Plot the peak values in an X-Y grid using the exact X and Y values
-scatter(x(locs_y, locs_x), y(locs_y, locs_x), 100, 'filled', '^');
-xlabel('X Values');
-ylabel('Y Values');
-title('Peak Values in X-Y Grid');
+% Read the Excel file
+data_excel = readtable('/Users/mohitsarin/Desktop/TTI/ground_truth.xlsx');
 
+% Extracting X, Y, and Z data
+x_excel = table2array(data_excel(:, 1));
+y_excel = table2array(data_excel(:, 2));
+z_excel = table2array(data_excel(:, 3));
 
-% Find peaks with a minimum peak height of 0.5
-% [pks, locs_y, locs_x] = peaks2(data, 'MinPeakHeight', 0.1, 'Threshold', 0.005, 'MinPeakDistance',0.020);
-%[pks, locs_y, locs_x] = peaks2(data, 'Threshold', 0.005);
-% [pks, locs_y, locs_x] = peaks2(data, 'MinPeakDistance',0.025 );
-% % Display the results in a table format
-%  fprintf('Peak Values\tRow Indices\tColumn Indices\n');
-fprintf('--------------------------------------------\n');
-for i = 1:length(pks)
- fprintf('%f\t%d\t\t%d\n', pks(i), locs_y(i), locs_x(i));
- end
+% Plot the scatter plot with 'X' markers
+scatter(x_excel, y_excel, 100, 'x'); % Increase marker size and use Z for color
 
-% 
-% % Interpolate the peak locations to get their corresponding x and y values
-% peak_x = interp1(1:size(X, 2), X(1,:), locs_x);
-% peak_y = interp1(1:size(Y, 1), Y(:,1), locs_y);
-% 
-% % Find peaks with a threshold of 0.2
-% 
-% 
-% % Find peaks with a minimum peak distance of 2
-% 
-% 
-% 
-% % Plot the peak values in an X-Y grid
-% scatter(locs_x, locs_y, 100, pks,'filled','^');
-% xlabel('Column Indices');
-% ylabel('Row Indices');
-% title('Peak Values in X-Y Grid');
-% colorbar; % Add a color bar to show the intensity of peak values
+% Customize the plot
+xlabel('X-axis Label');
+ylabel('Y-axis Label');
+title('Combined Scatter Plot');
+colorbar; % Add color bar for the first scatter plot
+
+% Save the plot as an image
+saveas(gcf, '/Users/mohitsarin/Desktop/combined_plot.png');
 
 
-% Save the plot
-saveas(gcf, '/Users/mohitsarin/Desktop/peak_values_plot.png');
+%%%% error function is defined here: 
+
+

@@ -1,27 +1,25 @@
 % Read the Excel file
-[~, ~, data] = xlsread('ground_truth.xlsx');
+data = readtable('/Users/mohitsarin/Desktop/TTI/ground_truth.xlsx')
+% Convert table to array
+data = table2array(data);
 
-% Convert cell array to numeric array
-data = cell2mat(data(2:end, :));
-
-% Extracting X and Y data
+% Extracting X, Y, and Z data
 x = data(:, 1);
 y = data(:, 2);
+z = data(:, 3);
 
 % Plot the scatter plot
-scatter(x, y, 50, 'filled',"+");
+%scatter(x, y, 100, z, 'filled'); % Increase marker size and use Z for color
+
+
+% Plot the scatter plot with 'X' markers
+scatter(x, y, 100,'x'); % Increase marker size and use Z for color
 
 % Customize the plot
 xlabel('X-axis Label');
 ylabel('Y-axis Label');
 title('Scatter Plot');
-ylim([0, 0.5]); % Set the y-axis limit to 0.5
-
-% Display the plot
-fig = gcf; % Get current figure handle
+colorbar; % Add color bar for Z values
 
 % Save the plot as an image
-saveas(fig, 'scatter_plot.png');
-
-% Close the figure window
-% close(fig);
+saveas(gcf, '/Users/mohitsarin/Desktop/base_plot.png');
