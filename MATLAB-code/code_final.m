@@ -255,8 +255,8 @@ Y_scaled = Y;
 z = griddata(X, Y, Z, x, y);
 
 % Find peaks in the data
-% [pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.001, 'MinPeakDistance',0.005);
-[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.0010, 'MinPeakDistance',0.005);
+[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.001, 'MinPeakDistance',0.02);
+%[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.0015, 'MinPeakDistance',0.008);
 
 % Plot the peak values in an X-Y grid using the scaled X values
 scatter(0.0118*locs_x, 0.0194*locs_y, 80, pks, 'filled');
@@ -271,7 +271,7 @@ y_excel = table2array(data_excel(:, 2));
 z_excel = table2array(data_excel(:, 3));
 
 % Plot the scatter plot with 'X' markers
-scatter(x_excel, y_excel, 100, 'x'); % Increase marker size and use Z for color
+scatter(x_excel, y_excel, 100, 'k', 'x'); % Increase marker size and use Z for color
 
 % Customize the plot
 xlabel('X-axis Label');
@@ -284,5 +284,77 @@ saveas(gcf, '/Users/mohitsarin/Desktop/combined_plot.png');
 
 
 %%%% error function is defined here: 
+final_x_loc = 0.0118*locs_x;
+final_y_loc = 0.0194*locs_y;
 
+%% distance with ground truth:
 
+%distance = (final_x_loc - x_excel)**2  + (final_y_loc - y_excel) **2;
+
+%%%%%%
+% Convert to column vectors
+final_x_loc = final_x_loc(:);
+final_y_loc = final_y_loc(:);
+x_excel = x_excel(:);
+y_excel = y_excel(:);
+
+% Create matrices for predicted points and ground truth
+predicted_points = [final_x_loc, final_y_loc];
+ground_truth = [x_excel, y_excel];
+
+% Initialize arrays
+assignments = zeros(size(ground_truth, 1), 1);
+assigned_pred = zeros(size(predicted_points, 1), 1);
+
+% Set threshold for assigning ground truth to predicted points
+threshold = 0.3;
+
+errors = zeros(size(ground_truth, 1), 1);
+
+% Loop through each ground truth point
+for i = 1:size(ground_truth, 1)
+    % Calculate the Euclidean distances between the ground truth point and all unassigned predicted points
+    dist_to_pred = sqrt(sum((predicted_points - ground_truth(i, :)).^2, 2));
+    % Find the indices of nearby predicted points within the threshold
+    nearby_indices = find(dist_to_pred <= threshold);
+    %disp(dist_to_pred);
+    if isempty(nearby_indices)
+        assignments(i) = -1; % Mark as unassigned
+        errors(i) = NaN;
+    else
+        % Find the index of the nearest predicted point that is not already assigned
+        unassigned_indices = nearby_indices(assigned_pred(nearby_indices) == 0);
+        if isempty(unassigned_indices)
+            assignments(i) = -1; % Mark as unassigned if all nearby predicted points are already assigned
+            errors(i) = NaN;
+        else
+            [~, nearest_idx] = min(dist_to_pred(unassigned_indices));
+            nearest_idx = unassigned_indices(nearest_idx);
+            assignments(i) = nearest_idx;
+            assigned_pred(nearest_idx) = 1; 
+            % Calculate error 
+            errors(i) = sqrt(sum((predicted_points(nearest_idx, :) - ground_truth(i, :)).^2));
+        end
+    end
+end
+
+% Print the assignments with coordinates and errors
+total_error = sum(errors(~isnan(errors)));
+average_error = total_error / sum(~isnan(errors));
+disp(['Total Euclidean error: ', num2str(total_error)]);
+disp(['Average Euclidean error: ', num2str(average_error)]);
+
+for i = 1:length(assignments)
+    if assignments(i) == -1
+        disp(['Ground truth point ', num2str(i), ' (x:', num2str(ground_truth(i,1)), ', y:', num2str(ground_truth(i,2)), ') is unassigned']);
+    else
+        disp(['Ground truth point ', num2str(i), ' (x:', num2str(ground_truth(i,1)), ', y:', num2str(ground_truth(i,2)), ') assigned to predicted point ', num2str(assignments(i)), ' (x:', num2str(predicted_points(assignments(i),1)), ', y:', num2str(predicted_points(assignments(i),2)), '), error: ', num2str(errors(i))]);
+    end
+end
+
+% Step by step code to show unassigned predicted points
+disp('Unassigned Predicted Points:');
+unassigned_indices = find(assigned_pred == 0);
+for i = 1:length(unassigned_indices)
+    disp(['Predicted point ', num2str(unassigned_indices(i)), ' (x:', num2str(predicted_points(unassigned_indices(i),1)), ', y:', num2str(predicted_points(unassigned_indices(i),2)), ') is unassigned']);
+end
