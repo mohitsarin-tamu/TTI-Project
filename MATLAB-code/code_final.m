@@ -238,6 +238,8 @@ end
 % End of the entire function
 
 end
+
+
 % Load CSV file
 data_csv = csvread('/Users/mohitsarin/Desktop/TTI/a240402b.csv'); % Adjust the file name as needed
 
@@ -297,11 +299,14 @@ final_x_loc = final_x_loc(:);
 final_y_loc = final_y_loc(:);
 x_excel = x_excel(:);
 y_excel = y_excel(:);
+% new
+z_excel = z_excel(:);
+final_z_loc = pks(:);
 
 % Create matrices for predicted points and ground truth
 predicted_points = [final_x_loc, final_y_loc];
 ground_truth = [x_excel, y_excel];
-
+  
 % Initialize arrays
 assignments = zeros(size(ground_truth, 1), 1);
 assigned_pred = zeros(size(predicted_points, 1), 1);
@@ -310,6 +315,51 @@ assigned_pred = zeros(size(predicted_points, 1), 1);
 threshold = 0.3;
 
 errors = zeros(size(ground_truth, 1), 1);
+
+% valley points detection for each predicted point - check the valley
+% points for the nearby peak
+
+function [valley_indices] = find_valleys(predicted_points)
+    % Initialize the output variable
+    valley_indices = zeros(size(predicted_points, 1), 1);
+
+    % Loop through each predicted point
+    for i = 1:size(predicted_points, 1)
+        % Calculate the Euclidean distances between the current predicted point and all other predicted points
+        dist_to_other_pred = sqrt(sum((predicted_points - predicted_points(i, :)).^2, 2));
+        
+        % Find the indices of nearby predicted points within the search radius
+        nearby_indices = find(dist_to_other_pred <= 1.0); % DEFINING the limit for valley indices
+        
+        % Exclude the current predicted point itself from nearby indices
+        nearby_indices(nearby_indices == i) = [];
+
+        % Sort the distances to get the nearest points
+        [~, sorted_indices] = sort(dist_to_other_pred(nearby_indices));
+        
+        % Extract the distances of nearby points
+        sorted_distances = dist_to_other_pred(nearby_indices(sorted_indices));
+        
+        % Calculate the 5th lowest percentile distance
+        fifth_percentile_index = ceil(0.05 * numel(sorted_distances));
+        threshold_distance = sorted_distances(fifth_percentile_index);
+        
+        % Find the indices of points that are within the threshold distance
+        within_threshold_indices = nearby_indices(sorted_indices(sorted_distances <= threshold_distance));
+        
+        % If there are no points within the threshold, assign -1
+        if isempty(within_threshold_indices)
+            valley_indices(i) = -1;
+        else
+            % Find the index of the nearest point among the points within the threshold
+            nearest_index = within_threshold_indices(1);
+            valley_indices(i) = nearest_index;
+        end
+    end
+end
+
+% Call the function to find valleys for each predicted point
+valley_indices = find_valleys(predicted_points);
 
 % Loop through each ground truth point
 for i = 1:size(ground_truth, 1)
@@ -349,6 +399,13 @@ for i = 1:length(assignments)
         disp(['Ground truth point ', num2str(i), ' (x:', num2str(ground_truth(i,1)), ', y:', num2str(ground_truth(i,2)), ') is unassigned']);
     else
         disp(['Ground truth point ', num2str(i), ' (x:', num2str(ground_truth(i,1)), ', y:', num2str(ground_truth(i,2)), ') assigned to predicted point ', num2str(assignments(i)), ' (x:', num2str(predicted_points(assignments(i),1)), ', y:', num2str(predicted_points(assignments(i),2)), '), error: ', num2str(errors(i))]);
+        % Print valley point for this assigned predicted point
+        assigned_valley_idx = valley_indices(assignments(i));
+        if assigned_valley_idx ~= -1 % If a valley point is found
+            disp(['  Valley point: (x:', num2str(predicted_points(assigned_valley_idx,1)), ', y:', num2str(predicted_points(assigned_valley_idx,2)), ')']);
+        else
+            disp('  No valley point found');
+        end
     end
 end
 
@@ -358,3 +415,47 @@ unassigned_indices = find(assigned_pred == 0);
 for i = 1:length(unassigned_indices)
     disp(['Predicted point ', num2str(unassigned_indices(i)), ' (x:', num2str(predicted_points(unassigned_indices(i),1)), ', y:', num2str(predicted_points(unassigned_indices(i),2)), ') is unassigned']);
 end
+
+% Calculate embankment depth and embankment percentage
+embankment_depth = zeros(length(assignments), 1);
+embankment_percentage = zeros(length(assignments), 1);
+mat_thickness = 0.5
+
+for i = 1:length(assignments)
+    if assignments(i) ~= -1 % If the ground truth point is assigned
+        % Calculate embankment depth
+        max_height = final_z_loc(assignments(i)); % Max height from predicted points
+        valley_height = final_z_loc(valley_indices(assignments(i))); % Valley height from predicted points
+        embankment_depth(i) = mat_thickness - (max_height - valley_height);
+        % Calculate embankment percentage
+        embankment_percentage(i) = embankment_depth(i) / mat_thickness * 100;
+    end
+end
+
+% Display embankment depth and embankment percentage for assigned ground truth points
+for i = 1:length(assignments)
+    if assignments(i) ~= -1 % If the ground truth point is assigned
+        disp(['Embankment depth for ground truth point ', num2str(i), ': ', num2str(embankment_depth(i))]);
+        disp(['Embankment percentage for ground truth point ', num2str(i), ': ', num2str(embankment_percentage(i)), '%']);
+    end
+end
+
+% Filter out unassigned ground truth points
+assigned_indices = find(assignments ~= -1);
+embankment_percentage_assigned = embankment_percentage(assigned_indices);
+
+% Plot embankment percentage against assigned ground truth points
+figure;
+plot(assigned_indices, embankment_percentage_assigned, '-o', 'LineWidth', 2);
+xlabel('Ground Truth Point Index');
+ylabel('Embankment Percentage');
+title('Embankment Percentage vs. Ground Truth Point Index');
+grid on;
+
+
+
+
+% Call the function to find valleys for each predicted point
+% valley_indices = find_valleys(predicted_points);
+
+% There are few points we have to find z values for this.
