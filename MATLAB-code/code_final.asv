@@ -253,7 +253,7 @@ X_scaled = X;
 Y_scaled = Y;
 
 % Convert to matrix format
-[x, y] = meshgrid(linspace(0, 4, 338), linspace(0, 2, 95));
+[x, y] = meshgrid(linspace(0, 4, 338), linspace(0, 2, 104));
 z = griddata(X, Y, Z, x, y);
 
 % Find peaks in the data
@@ -427,8 +427,7 @@ for i = 1:length(assignments)
     if assignments(i) ~= -1 % If the ground truth point is assigned
         % Calculate embankment depth
         max_height = final_z_loc(assignments(i)); % Max height from predicted points
-        %valley_height = final_z_loc(valley_indices(assignments(i))); % Valley height from predicted points
-        valley_height = final_z_loc(valley_indices(assignments(i)));
+        valley_height = final_z_loc(valley_indices(assignments(i))); % Valley height from predicted points
         embankment_depth(i) = mat_thickness - (max_height - valley_height);
         % Calculate embankment percentage
         embankment_percentage(i) = embankment_depth(i) / mat_thickness * 100;
