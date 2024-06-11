@@ -23,4 +23,3 @@ Steps to run the code ('completecode.m'):
 - If you want to calculate the error and the ground truth file is available, update the ground truth file location in the code: data_excel = readtable('/Users/mohitsarin/Desktop/TTI/ground_truth.xlsx').
 - Sample data is also attached herewith.
 
-
