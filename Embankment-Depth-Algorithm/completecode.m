@@ -239,29 +239,57 @@ end
 
 end
 
+%given csv file location here
+csv_file = csvread('a240402b.csv');
+ground_truth = readtable('ground_truth.xlsx');
+x_length = 4;
+y_length = 2;
+%ground_truth = '';
+
+%%% set the default values for peaks2 algorithm
+minpeakheight = 0.1;
+peaks2threshold = 0.001;
+minpeakdistance = 0.02;
 
 % Load CSV file
-data_csv = csvread('/Users/mohitsarin/Desktop/TTI/a240402b.csv'); % Adjust the file name as needed
+data_csv = csv_file; % Adjust the file name as needed
 
 % Extract X, Y, and Z columns
 X = data_csv(:, 1);
 Y = data_csv(:, 2);
 Z = data_csv(:, 3);
 
+
+% Calculate the number of unique values in X and Y columns
+num_unique_X = numel(unique(X));
+num_unique_Y = numel(unique(Y));
+
+% Find unique values in X and Y
+unique_X = unique(X);
+unique_Y = unique(Y);
+
+% Find the second number in X and Y
+second_X = unique_X(2);
+second_Y = unique_Y(2);
+
+
+
 % Convert to matrix format
-[x, y] = meshgrid(linspace(0, 4, 338), linspace(0, 2, 95));
+[x, y] = meshgrid(linspace(0, x_length, num_unique_X), linspace(0, y_length, num_unique_Y));
 z = griddata(X, Y, Z, x, y);
 
 % Find peaks in the data
-[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.001, 'MinPeakDistance',0.02);
+[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', minpeakheight, 'Threshold', peaks2threshold, 'MinPeakDistance',minpeakdistance);
 %[pks, locs_y, locs_x] = peaks2(z, 'MinPeakHeight', 0.1, 'Threshold', 0.0015, 'MinPeakDistance',0.008);
 
+
 % Plot the peak values in an X-Y grid using the scaled X values
-scatter(0.0118*locs_x, 0.0194*locs_y, 80, pks, 'filled');
+scatter(second_X*locs_x, second_Y*locs_y, 80, pks, 'filled');
 hold on; % Keep the current plot and add to it
 
+
 % Read the Excel file
-data_excel = readtable('/Users/mohitsarin/Desktop/TTI/ground_truth.xlsx');
+data_excel = ground_truth;
 
 % Extracting X, Y, and Z data
 x_excel = table2array(data_excel(:, 1));
@@ -282,8 +310,8 @@ saveas(gcf, '/Users/mohitsarin/Desktop/combined_plot.png');
 
 
 %%%% error function is defined here: 
-final_x_loc = 0.0118*locs_x;
-final_y_loc = 0.0194*locs_y;
+final_x_loc = second_X*locs_x;
+final_y_loc = second_Y*locs_y;
 
 % Convert to column vectors
 final_x_loc = final_x_loc(:);
@@ -308,9 +336,10 @@ assigned_pred = zeros(size(predicted_points, 1), 1);
 threshold = 0.3;
 
 errors = zeros(size(ground_truth, 1), 1);
+threshold_radius = 1.5;
 
 % Function to find valleys for each predicted point
-function [valley_indices] = find_valleys(predicted_points, grid_points, threshold)
+function [valley_indices] = find_valleys(predicted_points, grid_points, threshold_radius)
     % Initialize the output variable
     valley_indices = zeros(size(predicted_points, 1), 1);
 
@@ -320,7 +349,7 @@ function [valley_indices] = find_valleys(predicted_points, grid_points, threshol
         dist_to_all_points = sqrt(sum((grid_points - predicted_points(i, :)).^2, 2));
         
         % Find the indices of nearby points within the search radius
-        nearby_indices = find(dist_to_all_points <= 1.5);
+        nearby_indices = find(dist_to_all_points <= threshold_radius);
         
         % Sort the distances to get the nearest points
         [~, sorted_indices] = sort(dist_to_all_points(nearby_indices));
