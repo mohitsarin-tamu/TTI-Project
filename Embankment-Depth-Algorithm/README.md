@@ -9,4 +9,12 @@ Steps to run the code ('completecode.m'):
 - Sample data is also attached herewith.
 
 Steps to run the code divided into functions for clarity (code folder):
--
+- This folder consists of 3 files, namely: main.m, peaks2.m, find_valleys.m
+- Run the main.m file after setting the required paths such as csv_file which is the path for the data collected using laser and ground_truth which is the path of groud truth file.
+- If the groud truths are not available leave that as empty. 
+
+- Define mat_thickness in embankment depth function (default 0.5).
+- Define x_length, and y_length as width of x and y axis as per the LASER used and the data gathered (default 4,2 respectively).
+- Define threshold_radius as the radius around which valley point is searched for (default 1.5).
+- Define threshold to find the nearby predicted points from the ground truth (default 3.0).
+
