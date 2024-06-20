@@ -1,4 +1,4 @@
-# TTI-Project (Embankment-Depth-Algorithm)
+# TTI-Project (Embedment-Depth-Algorithm)
 
 - This repository consists of various codes related to the Embankment-Depth-Algorithm.
 - The folder named MATLAB Code and Python Code consists of Legacy code and is currently not in use.
